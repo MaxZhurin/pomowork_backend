@@ -5,12 +5,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreatePriceGroupDto } from './dto/create-price-group.dto';
 import { UpdatePriceGroupDto } from './dto/update-price-group.dto';
 import { PriceGroup } from './entities/price-group.entity';
+import { PriceGroupProduct } from './entities/price-group-pdoducts.entity';
 
 @Injectable()
 export class PriceGroupsService {
   constructor(
     @InjectRepository(PriceGroup)
     private readonly priceGroupRepository: Repository<PriceGroup>,
+
+    @InjectRepository(PriceGroupProduct)
+    private readonly priceGroupProductRepository: Repository<PriceGroupProduct>,
   ) {}
 
   async create(createPriceGroupDto: CreatePriceGroupDto) {
@@ -23,16 +27,22 @@ export class PriceGroupsService {
     //     deviceType: true,
     //   },
     // });
+    const orderObj = {};
+    //@ts-ignore
+    query.sort.forEach(({ field, order }) => {
+      orderObj[field] = order;
+    });
+
     console.log('-*******ingredient', query, query.filter);
     // return res;
-    const [list, count] = await this.priceGroupRepository
-      .createQueryBuilder('priceGroups')
-      // .leftJoinAndSelect('devices.deviceType', 'deviceType')
-      // .leftJoinAndSelect('devices.workpoint', 'workpoint')
-      .take(query.limit)
-      .skip(query.offset)
-      // .where('workpoint.id IN (:...id)', query.filter)
-      .getManyAndCount();
+    const [list, count] = await this.priceGroupRepository.findAndCount({
+      relations: {
+        priceGroupProducts: true,
+      },
+      order: orderObj,
+      take: query.limit,
+      skip: query.offset,
+    });
     return {
       data: list,
       count: 0,
@@ -43,16 +53,40 @@ export class PriceGroupsService {
   }
 
   async findOne(id: string) {
-    return await this.priceGroupRepository.findOne({ where: { id } });
+    return await this.priceGroupRepository.findOne({
+      where: { id },
+      relations: {
+        priceGroupProducts: true,
+      },
+      order: {
+        priceGroupProducts: {
+          index: 'ASC',
+        },
+      },
+    });
   }
 
   async update(id: string, updatePriceGroupDto: UpdatePriceGroupDto) {
-    this.priceGroupRepository
-      .createQueryBuilder()
-      .update('priceGroup')
-      .set(updatePriceGroupDto)
-      .where('id = :id', { id })
-      .execute();
+    let { priceGroupProducts, ...rest } = updatePriceGroupDto;
+    if (priceGroupProducts) {
+      priceGroupProducts = priceGroupProducts.map((item, index) => {
+        return { ...item, priceGroupId: id, index };
+      });
+
+      await this.priceGroupProductRepository.delete({ priceGroupId: id });
+      await this.priceGroupProductRepository.save(priceGroupProducts);
+    }
+
+    console.log('rest', rest);
+
+    if (Object.keys(rest).length !== 0) {
+      this.priceGroupRepository
+        .createQueryBuilder()
+        .update(PriceGroup)
+        .set(rest)
+        .where('id = :id', { id })
+        .execute();
+    }
     return `This action updatePriceGroupDto a #${id} device`;
   }
 

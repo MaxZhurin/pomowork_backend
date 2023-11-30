@@ -1,1 +1,3 @@
-export class CreatePriceGroupDto {}
+export class CreatePriceGroupDto {
+  priceGroupProducts: any;
+}

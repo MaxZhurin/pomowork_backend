@@ -19,11 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "typeorm-ts-node-commonjs",
-    "typeorm:g": "npm run typeorm migration:generate -- -d src/typeorm.config.ts database/migrations/auto",
-    "typeorm:m": "npm run typeorm migration:run -- -d src/typeorm.config.ts",
-    "seed:create": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create --name database/ingredient.seeder.ts",
-    "seed:run": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/typeorm.config.ts",
-    "seed:rune": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/typeorm.config.ts --name database/ingredient.seeder.ts"
+    "typeorm:g": "npm run typeorm migration:generate -- -d src/data-source.ts src/database/migrations/auto",
+    "typeorm:m": "npm run typeorm migration:run -- -d src/data-source.ts",
+    "typeorm:seed": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.7",

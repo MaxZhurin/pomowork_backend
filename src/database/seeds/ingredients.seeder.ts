@@ -1,8 +1,8 @@
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 import { DataSource } from 'typeorm';
-import { Ingredient } from '..//src/ingredients/entities/ingredient.entity';
+import { Ingredient } from '../../ingredients/entities/ingredient.entity';
 
-export default class UserSeeder implements Seeder {
+export default class IngredientSeeder implements Seeder {
   public async run(
     dataSource: DataSource,
     factoryManager: SeederFactoryManager,
@@ -11,17 +11,17 @@ export default class UserSeeder implements Seeder {
     await repository.insert([
       {
         name: 'qwe',
-        unit: 'weight',
+        // unit: 'weight',
       },
     ]);
 
     // ---------------------------------------------------
 
-    const userFactory = await factoryManager.get(Ingredient);
+    // const userFactory = await factoryManager.get(Ingredient);
     // save 1 factory generated entity, to the database
-    await userFactory.save();
+    // await userFactory.save();
 
     // save 5 factory generated entities, to the database
-    await userFactory.saveMany(5);
+    // await userFactory.saveMany(5);
   }
 }

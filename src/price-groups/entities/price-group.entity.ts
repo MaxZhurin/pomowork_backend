@@ -32,6 +32,9 @@ export class PriceGroup {
   @Column()
   name: string;
 
+  @Column()
+  currency: string;
+
   @OneToMany(() => Workpoint, (workpoint) => workpoint.priceGroup)
   @JoinColumn()
   workpoints: Workpoint[];

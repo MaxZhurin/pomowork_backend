@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   VersionColumn,
+  Index,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { Workpoint } from '../../workpoints/entities/workpoint.entity';
@@ -17,6 +18,7 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index({ unique: true })
   @Column()
   login: string;
 
