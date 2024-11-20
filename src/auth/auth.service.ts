@@ -1,75 +1,102 @@
+import axios from 'axios';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import {
-  LoginDto,
-  RefreshDTO,
-  LoginDeviceDTO,
-  RefreshDeviceDTO,
-} from './dto/auth.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { SettingsService } from './../settings/settings.service';
+import { TimerService } from './../timer/timer.service';
+import { jwtConstants } from './constants';
+import { RefreshDTO } from './dto/auth.dto';
 import { UserService } from '@/src/users/users.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity';
-import { DevicesService } from '../devices/devices.service';
+import { User } from '../database/entities/user.entity';
+
+type GoogleRes = {
+  sub: string;
+  name: string;
+  picture: string;
+  email: string;
+  email_verified: boolean;
+};
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UserService,
+    private timerService: TimerService,
+    private settingsService: SettingsService,
     private jwtService: JwtService,
-    private devicesService: DevicesService,
   ) {}
 
-  async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByLogin(loginDto.username);
-    console.log(user);
-    if (user?.password !== loginDto.password) {
+  async authWithGoogle({ token }) {
+    try {
+      const { data } = await axios.get<GoogleRes>(
+        `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`,
+      );
+
+      let user = await this.usersService.findByLogin(data.email);
+
+      if (!user) {
+        const newUser = new User();
+
+        newUser.email = data.email;
+        newUser.name = data.name;
+        newUser.googleId = data.sub;
+        newUser.picture = data.picture;
+
+        user = await this.usersService.create(newUser);
+        await this.timerService.create(user.id);
+        await this.settingsService.create(user.id);
+      }
+
+      const { id, email, picture } = user;
+
+      const tokens = await this._getTokens({
+        id,
+        email,
+      });
+
+      return {
+        ...tokens,
+        user: {
+          id,
+          email,
+          picture,
+        },
+      };
+    } catch (error) {
+      console.log(error);
       throw new UnauthorizedException();
     }
-    const payload = { sub: user.id, username: user.login };
-    return {
-      accessToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '3h',
-      }),
-      refreshToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
-      }),
-    };
-  }
-
-  async loginDevice(loginDeviceDTO: LoginDeviceDTO) {
-    const device = await this.devicesService.findOne(loginDeviceDTO.deviceId);
-
-    const payload = { sub: loginDeviceDTO.deviceId, type: 'DEVICE', ...device };
-    return {
-      accessToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '3h',
-      }),
-      refreshToken: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
-      }),
-    };
-  }
-
-  async refreshDevice(refreshDeviceDTO: RefreshDeviceDTO) {
-    const data = await this.jwtService.verifyAsync(
-      refreshDeviceDTO.refreshToken,
-    );
-
-    return this.loginDevice({ deviceId: data.id });
-    console.log('refreshDevice ////////', data);
   }
 
   async refresh(refreshDTO: RefreshDTO) {
     try {
-      console.log('refresh', refreshDTO);
-      const data = await this.jwtService.verifyAsync(refreshDTO.refreshToken);
-      console.log('refresh0', data);
-    } catch (error) {}
+      const data = await this.jwtService.verifyAsync(refreshDTO.refreshToken, {
+        secret: jwtConstants.secret,
+      });
+
+      if (data) {
+        const tokens = await this._getTokens({
+          id: data.id,
+          email: data.email,
+        });
+
+        return tokens;
+      } else {
+        throw new UnauthorizedException();
+      }
+    } catch (error) {
+      console.log(error);
+      throw new UnauthorizedException();
+    }
   }
 
-  register(createUserDto: LoginDto) {
-    return 'This register';
+  async _getTokens(payload) {
+    return {
+      accessToken: await this.jwtService.signAsync(payload, {
+        expiresIn: '3h',
+      }),
+      refreshToken: await this.jwtService.signAsync(payload, {
+        expiresIn: '7d',
+      }),
+    };
   }
 }

@@ -18,7 +18,7 @@ import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '@/src/auth/auth.guard';
-import { User } from './entities/user.entity';
+import { User } from '../database/entities/user.entity';
 import { RequestQueryParser } from '@nestjsx/crud-request';
 import {
   Crud,
@@ -100,22 +100,6 @@ export class UsersController {
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
-  }
-
-  // @UseGuards(AuthGuard)
-  @Get()
-  // @Header('Access-Control-Expose-Headers', 'Content-Range')
-  // @Header('Content-Range', 'posts 0-24/319')
-  findAll(@Query() query: ListAllEntities, @Req() req: Request) {
-    const requestQueryParser = new RequestQueryParser();
-    // console.log('-------query', query);
-    // console.log(
-    //   '-------parseQuery',
-
-    //   requestQueryParser.parseQuery(query),
-    // );
-    // filter, range, sort
-    return this.userService.findAll(query, req);
   }
 
   // @Get()

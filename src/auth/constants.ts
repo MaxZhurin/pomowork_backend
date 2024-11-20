@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config();
+
 export const jwtConstants = {
-  secret: 'DO NOT USE THIS VALUE.RCE CODE.',
+  secret: process.env.JWT_SECRET,
 };

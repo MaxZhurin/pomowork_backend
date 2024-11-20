@@ -1,6 +1,6 @@
 export class CreateUserDto {
-  login: string;
-  password: string;
-  firstName: string;
-  lastName: string;
+  email: string;
+  googleId: string;
+  picture: string;
+  emailVerified: boolean;
 }
