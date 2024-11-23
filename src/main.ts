@@ -5,8 +5,9 @@ import { AppModule } from './app.module';
 import "./webpush";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  const app = await NestFactory.create(AppModule,  { cors: true });
+  app.enableCors({origin:['https://pomowork-frontend.pages.dev']});
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
